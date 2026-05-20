@@ -179,6 +179,21 @@ export const ScriptSchema = z.object({
       (s) => s[s.length - 1]?.type === "outro",
       { message: "last scene must be type=outro" }
     ),
+}).superRefine((script, ctx) => {
+  const isActualNews = script.metadata.mode !== "manga"
+    && script.metadata.source.domain.toLowerCase() !== "story";
+  if (isActualNews) return;
+
+  const newsBoardTemplates = new Set(["comparison", "stat-hero", "feature-list"]);
+  script.scenes.forEach((scene, index) => {
+    if (newsBoardTemplates.has(scene.templateData.template)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["scenes", index, "templateData", "template"],
+        message: "news board templates are only allowed for News Mode",
+      });
+    }
+  });
 });
 
 export type Script = z.infer<typeof ScriptSchema>;

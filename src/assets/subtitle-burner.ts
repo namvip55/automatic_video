@@ -18,7 +18,7 @@ export interface SubtitleBuildResult {
   outPath: string | null;
 }
 
-interface SubtitleCue {
+export interface SubtitleCue {
   startMs: number;
   endMs: number;
   text: string;
@@ -40,6 +40,16 @@ function formatSrtTimeMs(totalMs: number): string {
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const pad3 = (n: number) => String(n).padStart(3, "0");
   return `${pad2(hh)}:${pad2(mm)}:${pad2(ss)},${pad3(ms)}`;
+}
+
+function formatAssTimeMs(totalMs: number): string {
+  const clamped = Math.max(0, Math.round(totalMs));
+  const hh = Math.floor(clamped / 3_600_000);
+  const mm = Math.floor((clamped % 3_600_000) / 60_000);
+  const ss = Math.floor((clamped % 60_000) / 1_000);
+  const cs = Math.floor((clamped % 1_000) / 10);
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  return `${hh}:${pad2(mm)}:${pad2(ss)}.${pad2(cs)}`;
 }
 
 function splitVoiceText(text: string): string[] {
@@ -157,6 +167,60 @@ function toSrt(cues: SubtitleCue[]): string {
     .join("\n\n") + "\n";
 }
 
+function escapeAssText(text: string): string {
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/\{/g, "\\{")
+    .replace(/\}/g, "\\}")
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cueToKaraokeText(cue: SubtitleCue): string {
+  const words = cue.text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  if (words.length === 0) return "";
+
+  const totalCentis = Math.max(1, Math.round((cue.endMs - cue.startMs) / 10));
+  const totalWeight = words.reduce((sum, word) => sum + Math.max(1, word.length), 0);
+  let used = 0;
+
+  return words.map((word, idx) => {
+    const isLast = idx === words.length - 1;
+    const centis = isLast
+      ? Math.max(1, totalCentis - used)
+      : Math.max(1, Math.round(totalCentis * (Math.max(1, word.length) / totalWeight)));
+    used += centis;
+    return `{\\k${centis}}${escapeAssText(word)}`;
+  }).join(" ");
+}
+
+export function toWordHighlightAss(cues: SubtitleCue[]): string {
+  const events = cues
+    .map((cue) => {
+      const text = cueToKaraokeText(cue);
+      if (!text) return null;
+      return `Dialogue: 0,${formatAssTimeMs(cue.startMs)},${formatAssTimeMs(cue.endMs)},Highlight,,0,0,0,,${text}`;
+    })
+    .filter((line): line is string => !!line);
+
+  return `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Highlight,Montserrat ExtraBold Italic,54,&H00FFFFFF,&H0000D7FF,&H00000000,&H80000000,1,1,0,0,100,100,0,0,1,5,2,2,90,90,150,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+${events.join("\n")}
+`;
+}
+
 export async function buildMergedSubtitleFile(args: {
   scenes: SceneSubtitleInput[];
   outSrtPath: string;
@@ -228,6 +292,24 @@ export async function buildMergedSubtitleFile(args: {
   };
 }
 
+export function subtitleForceStyle(): string {
+  return [
+    "FontName=Montserrat ExtraBold Italic",
+    "FontSize=11",
+    "Bold=1",
+    "Italic=1",
+    "PrimaryColour=&H00FFFFFF",
+    "OutlineColour=&H00000000",
+    "BorderStyle=1",
+    "Outline=1.1",
+    "Shadow=0.4",
+    "Alignment=2",
+    "MarginL=24",
+    "MarginR=24",
+    "MarginV=95",
+  ].join(",");
+}
+
 export async function burnSubtitlesIntoVideo(args: {
   videoPath: string;
   subtitlePath: string;
@@ -239,22 +321,13 @@ export async function burnSubtitlesIntoVideo(args: {
     ? videoPath.replace(/\.mp4$/i, "-sub-tmp.mp4")
     : `${videoPath}-sub-tmp.mp4`;
 
-  const subtitleFilterPath = subtitlePath.replace(/\\/g, "/").replace(/:/g, "\\:");
-  const style = [
-    "FontName=Arial",
-    "FontSize=10",
-    "PrimaryColour=&H00FFFFFF",
-    "OutlineColour=&H00000000",
-    "BorderStyle=1",
-    "Outline=0.8",
-    "Shadow=0",
-    "Alignment=2",
-    "MarginL=20",
-    "MarginR=20",
-    "MarginV=90",
-  ].join(",");
+  const sourceSrt = await readFile(subtitlePath, "utf8");
+  const assPath = subtitlePath.replace(/\.srt$/i, ".ass");
+  const assCues = parseSrtCues(sourceSrt);
+  await writeFile(assPath, toWordHighlightAss(assCues), "utf8");
 
-  const vf = `subtitles='${subtitleFilterPath}':force_style='${style}'`;
+  const subtitleFilterPath = assPath.replace(/\\/g, "/").replace(/:/g, "\\:");
+  const vf = `subtitles='${subtitleFilterPath}'`;
 
   await new Promise<void>((resolve, reject) => {
     const argsFfmpeg = [

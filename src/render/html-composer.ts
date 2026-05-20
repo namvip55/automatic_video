@@ -73,32 +73,8 @@ export function composeHtml(args: ComposeArgs): string {
 }
 
 // ── PERSISTENT SHELL ───────────────────────────────────────────────────────
-function renderShell(metadata: Script["metadata"]): string {
-  const channel = escapeHtml(metadata.channel);
-  const domain = escapeHtml(metadata.source.domain);
-  const handle = escapeHtml(metadata.channel);
-  return `
-<!-- Shell: persistent brand elements (no data-start → always visible) -->
-<div class="shell-bg"></div>
-
-<div class="brand-shell-header">
-  <div class="brand-icon">&gt;_</div>
-  <div class="brand-text">
-    <div class="brand-name">${channel}</div>
-    <div class="brand-tag">TIN CÔNG NGHỆ</div>
-  </div>
-</div>
-
-<div class="brand-shell-handle">
-  <span class="handle-music">&#9835;</span>
-  <span class="handle-text">${handle}</span>
-</div>
-
-<div class="brand-shell-keyword">
-  <span>${escapeHtml(domain)}</span>
-</div>
-
-${GRAIN_OVERLAY_HTML}`.trim();
+function renderShell(_metadata: Script["metadata"]): string {
+  return `<div class="shell-bg"></div>\n${GRAIN_OVERLAY_HTML}`;
 }
 
 // ── SCENE DISPATCH ─────────────────────────────────────────────────────────
@@ -340,15 +316,9 @@ function renderMangaPanelInner(td: Extract<TemplateDataType, { template: "manga-
 
 // ── OUTRO SCENE ────────────────────────────────────────────────────────────
 function renderOutroInner(
-  td: Extract<TemplateDataType, { template: "outro" }>,
+  _td: Extract<TemplateDataType, { template: "outro" }>,
 ): string {
-  return `
-<div class="layout-outro">
-  <div class="out-cta-top">${escapeHtml(td.ctaTop)}</div>
-  <div class="out-channel">${escapeHtml(td.channelName)}</div>
-  <div class="out-underline"></div>
-  <div class="out-source">Nguồn: ${escapeHtml(td.source)}</div>
-</div>`.trim();
+  return `<div class="layout-outro clean-outro"></div>`;
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────────────

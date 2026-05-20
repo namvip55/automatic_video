@@ -32,4 +32,29 @@ describe("ScriptSchema", () => {
     data.scenes = data.scenes.filter((s: any) => s.type !== "outro");
     expect(() => ScriptSchema.parse(data)).toThrow(/outro/);
   });
+
+  it("rejects news board templates for story scripts", () => {
+    const data = load("sample-script-with-image.json");
+    data.metadata.source.domain = "story";
+    data.metadata.source.url = "generated://story";
+    data.scenes[1].templateData = {
+      template: "stat-hero",
+      value: "99%",
+      label: "giống bảng tin",
+    };
+
+    expect(() => ScriptSchema.parse(data)).toThrow(/news board templates/);
+  });
+
+  it("rejects news board templates for manga scripts", () => {
+    const data = load("sample-script-with-image.json");
+    data.metadata.mode = "manga";
+    data.scenes[1].templateData = {
+      template: "feature-list",
+      title: "Bảng tin",
+      bullets: ["Không dùng cho manga"],
+    };
+
+    expect(() => ScriptSchema.parse(data)).toThrow(/news board templates/);
+  });
 });

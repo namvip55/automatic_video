@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { buildMergedSubtitleFile, burnSubtitlesIntoVideo } from "./subtitle-burner.js";
+import { buildMergedSubtitleFile, burnSubtitlesIntoVideo, subtitleForceStyle, toWordHighlightAss } from "./subtitle-burner.js";
 
 let tmp: string;
 
@@ -175,6 +175,39 @@ describe("buildMergedSubtitleFile", () => {
     expect(result.cueCount).toBe(0);
     expect(result.outPath).toBeNull();
     expect(result.skipped).toBe(2);
+  });
+});
+
+describe("subtitleForceStyle", () => {
+  it("uses bold italic modern sans-serif styling", () => {
+    const style = subtitleForceStyle();
+    expect(style).toContain("FontName=Montserrat ExtraBold Italic");
+    expect(style).toContain("Bold=1");
+    expect(style).toContain("Italic=1");
+    expect(style).toContain("Outline=1.1");
+  });
+});
+
+describe("toWordHighlightAss", () => {
+  it("builds ASS subtitles with karaoke word highlight styling", () => {
+    const ass = toWordHighlightAss([
+      { startMs: 0, endMs: 1200, text: "Xin chao ban" },
+    ]);
+
+    expect(ass).toContain("[V4+ Styles]");
+    expect(ass).toContain("Style: Highlight,Montserrat ExtraBold Italic,54");
+    expect(ass).toContain("&H0000D7FF");
+    expect(ass).toContain("Dialogue: 0,0:00:00.00,0:00:01.20,Highlight");
+    expect(ass).toMatch(/\{\\k\d+\}Xin \{\\k\d+\}chao \{\\k\d+\}ban/);
+  });
+
+  it("escapes ASS control characters in cue text", () => {
+    const ass = toWordHighlightAss([
+      { startMs: 0, endMs: 1000, text: "A {test} \\ ok" },
+    ]);
+
+    expect(ass).toContain("\\{test\\}");
+    expect(ass).toContain("\\\\");
   });
 });
 

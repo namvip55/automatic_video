@@ -31,14 +31,13 @@ describe("composeHtml", () => {
     expect(html).toContain('class="scene clip');       // clip class required for hyperframes visibility
     expect(html).toContain('window.__timelines');       // timeline registry (inlined JS)
 
-    // ── Persistent brand shell ────────────────────────────────
-    expect(html).toContain('class="brand-shell-header"');
-    expect(html).toContain('class="brand-shell-handle"');
-    expect(html).toContain('class="brand-shell-keyword"');
+    // ── Persistent shell keeps only neutral background/effects ─────────────
+    expect(html).toContain('class="shell-bg"');
     expect(html).toContain('id="grain-overlay"');
-    // Shell has no data-start (persistent)
-    expect(html).toContain('class="brand-name"');
-    expect(html).toContain("Công nghệ 24h");
+    expect(html).not.toContain('class="brand-shell-header"');
+    expect(html).not.toContain('class="brand-shell-handle"');
+    expect(html).not.toContain('class="brand-shell-keyword"');
+    expect(html).not.toContain('class="brand-name"');
 
     // ── Hook scene ─────────────────────────────────────────────
     expect(html).toContain('data-layout="hook"');
@@ -68,13 +67,14 @@ describe("composeHtml", () => {
     expect(html).toContain('class="callout-card"');
     expect(html).toContain('class="callout-statement"');
 
-    // ── Outro scene ────────────────────────────────────────────
+    // ── Outro scene has no branding CTA/channel/source ─────────
     expect(html).toContain('data-layout="outro"');
-    expect(html).toContain('class="out-channel"');
-    expect(html).toContain('class="out-underline"');
-    expect(html).toContain('class="out-source"');
-    expect(html).toContain("Theo dõi ngay");            // ctaTop content
-    expect(html).toContain('class="out-cta-top"');
+    expect(html).toContain('class="layout-outro clean-outro"');
+    expect(html).not.toContain('class="out-channel"');
+    expect(html).not.toContain('class="out-underline"');
+    expect(html).not.toContain('class="out-source"');
+    expect(html).not.toContain("Theo dõi ngay");
+    expect(html).not.toContain('class="out-cta-top"');
 
     // Audio src
     expect(html).toContain('src="voice.mp3"');

@@ -37,14 +37,14 @@ Pipeline sẽ tự xử lý các phần chính:
 | Mode | Input | Visual | Output |
 | :--- | :--- | :--- | :--- |
 | News | URL tin tức hoặc file nội dung | Video/ảnh stock + template tin tức | `video.mp4` |
-| Story | Chủ đề hoặc nội dung truyện | Video nền thiên nhiên, côn trùng, chill | `video.mp4` |
+| Story | Chủ đề hoặc nội dung truyện | Video đông người tấp nập/xô bồ, thể thao, thiên nhiên hùng vĩ | `video.mp4` |
 | Manga | URL/folder ảnh truyện | Trang manga + Ken Burns | `video.mp4` |
 
 ## Tính năng chính
 
-- Slash command Claude Code: `/create-news-video ...`
+- Slash command Claude Code riêng cho từng mode: `/create-news-video`, `/create-story-video`, `/create-manga-video`.
 - Skill setup môi trường: `/setup-environment`
-- Story Mode dùng video nền động, không dùng ảnh tĩnh.
+- Story Mode dùng video nền động: đông người tấp nập/xô bồ, thể thao, thiên nhiên hùng vĩ; không dùng ảnh tĩnh.
 - Manga OCR bằng Claude Vision, đọc phải sang trái, trên xuống dưới.
 - TTS tiếng Việt qua LucyLab, hoặc đa ngôn ngữ qua ElevenLabs.
 - Tự burn phụ đề vào video.
@@ -172,8 +172,8 @@ Skill này sẽ check Git, Node, npm, FFmpeg, tạo `.env.local` nếu thiếu, 
 
 ```text
 /create-news-video https://vnexpress.net/link-tin-tuc
-/create-news-video Tạo video kể chuyện hài hước ngắn 2 phút
-/create-news-video https://manga-site.com/chapter-1
+/create-story-video Tạo video kể chuyện hài hước ngắn 2 phút
+/create-manga-video https://manga-site.com/chapter-1
 ```
 
 Kết quả nằm tại:

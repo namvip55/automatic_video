@@ -20,6 +20,7 @@ import { log } from "./utils/logger.js";
 const TOTAL_STEPS = 8;
 const SCENE_GAP_SEC = 0.5;
 const OUTRO_HOLD_SEC = 3;
+const SCENE_WHITE_FADE_SEC = 0.14;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(__dirname, "render", "templates");
@@ -122,31 +123,33 @@ export async function runPipeline(scriptPath: string): Promise<void> {
   };
   const isStoryStyle = script.metadata.source.domain.toLowerCase() === "story"
     || script.metadata.source.url.toLowerCase().startsWith("generated://story");
-  const natureFallbacks = [
-    "calm forest",
-    "misty mountains",
-    "sunlight through trees",
-    "peaceful river",
-    "soft rain nature",
-    "quiet meadow",
-    "sunset lake",
-    "gentle clouds",
-    "peaceful garden",
-    "morning forest mist",
+  const storyVideoFallbacks = [
+    "crowded city street",
+    "busy street crowd",
+    "people walking downtown",
+    "urban crowd rush hour",
+    "basketball game",
+    "soccer match",
+    "runner training",
+    "extreme sports",
+    "majestic mountains",
+    "dramatic ocean waves",
+    "epic waterfall",
+    "aerial nature landscape",
   ];
-  const natureKeywordForScene = (idx: number) => natureFallbacks[idx % natureFallbacks.length];
+  const storyVideoKeywordForScene = (idx: number) => storyVideoFallbacks[idx % storyVideoFallbacks.length];
 
   const videoDir = join(outputDir, "videos");
   await mkdir(videoDir, { recursive: true });
 
   let doneVideo = 0;
-  const videoScenesCount = isStoryStyle ? 0 : script.scenes.filter(s => s.visual?.videoKeyword).length;
+  const shouldFetchVideo = (scene: Script["scenes"][number]) => isStoryStyle || !!scene.visual?.videoKeyword;
+  const videoScenesCount = script.scenes.filter(shouldFetchVideo).length;
 
-  const videoPromises = script.scenes.map((scene) =>
+  const videoPromises = script.scenes.map((scene, idx) =>
     limit(async () => {
-      if (isStoryStyle) return { id: scene.id, success: false, reason: "story mode uses still nature images" };
-      const kw = toEnglishPexelsQuery(scene.visual?.videoKeyword, "news background");
-      if (!kw) return { id: scene.id, success: false, reason: "no keyword" };
+      if (!shouldFetchVideo(scene)) return { id: scene.id, success: false, reason: "no keyword" };
+      const kw = toEnglishPexelsQuery(scene.visual?.videoKeyword, isStoryStyle ? storyVideoKeywordForScene(idx) : "news background");
       const out = join(videoDir, `scene-${scene.id}.mp4`);
       if (existsSync(out)) {
         doneVideo++;
@@ -156,6 +159,9 @@ export async function runPipeline(scriptPath: string): Promise<void> {
       const result = await fetchStockVideo(kw, out, cfg.pexelsApiKey);
       doneVideo++;
       if (videoScenesCount > 0) log.progress(doneVideo, videoScenesCount, "Video");
+      if (!result.success) {
+        log.warn(`  scene ${scene.id}: Pexels video fetch failed (${result.reason})`);
+      }
       return { id: scene.id, ...result };
     }),
   );
@@ -163,11 +169,12 @@ export async function runPipeline(scriptPath: string): Promise<void> {
   const pexelsImgDir = join(outputDir, "images", "pexels");
   await mkdir(pexelsImgDir, { recursive: true });
   let doneImg = 0;
-  const imgScenesCount = script.scenes.filter(s => isStoryStyle || s.visual?.imageKeyword).length;
+  const imgScenesCount = script.scenes.filter(s => !isStoryStyle && s.visual?.imageKeyword).length;
 
-  const pexelsImagePromises = script.scenes.map((scene, idx) =>
+  const pexelsImagePromises = script.scenes.map((scene) =>
     limit(async () => {
-      const kw = toEnglishPexelsQuery(scene.visual?.imageKeyword, isStoryStyle ? natureKeywordForScene(idx) : "news background");
+      if (isStoryStyle) return { id: scene.id, success: false, reason: "story mode uses video backgrounds" };
+      const kw = toEnglishPexelsQuery(scene.visual?.imageKeyword, "news background");
       if (!kw) return { id: scene.id, success: false };
       const out = join(pexelsImgDir, `scene-${scene.id}.jpg`);
       if (existsSync(out)) {
@@ -351,7 +358,27 @@ export async function runPipeline(scriptPath: string): Promise<void> {
     }
     // Apply vignette darkening to footage layer (since HTML overlay is skipped for video scenes)
     f.push("[footage]drawbox=x=0:y=0:w=iw:h=ih:color=black@0.35:t=fill[footage_dark]");
-    f.push("[footage_dark][ui]overlay=format=auto[out]");
+    const transitionStarts = footageScenes.slice(1).map((bv) => bv.start);
+    if (transitionStarts.length > 0) {
+      let transitionBase = "footage_dark";
+      transitionStarts.forEach((start, idx) => {
+        const half = SCENE_WHITE_FADE_SEC / 2;
+        const fadeStart = Math.max(0, start - half);
+        f.push(
+          `color=c=white:s=1080x1920:d=${esc(SCENE_WHITE_FADE_SEC)},format=rgba,` +
+          `fade=t=in:st=0:d=${esc(half)}:alpha=1,` +
+          `fade=t=out:st=${esc(half)}:d=${esc(half)}:alpha=1,` +
+          `setpts=PTS-STARTPTS+${esc(fadeStart)}/TB[whitefade${idx}]`
+        );
+        const fadeEnd = fadeStart + SCENE_WHITE_FADE_SEC;
+        const nextLabel = idx === transitionStarts.length - 1 ? "footage_transition" : `footage_transition${idx}`;
+        f.push(`[${transitionBase}][whitefade${idx}]overlay=enable='between(t,${esc(fadeStart)},${esc(fadeEnd)})':format=auto:eof_action=pass[${nextLabel}]`);
+        transitionBase = nextLabel;
+      });
+      f.push("[footage_transition][ui]overlay=format=auto[out]");
+    } else {
+      f.push("[footage_dark][ui]overlay=format=auto[out]");
+    }
     const filterGraph = f.join("; ");
     log.info(`  ffmpeg filter: ${filterGraph}`);
     await new Promise<void>((resolve, reject) => {
