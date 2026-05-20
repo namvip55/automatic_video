@@ -2,68 +2,68 @@
 
 <div align="center">
 
-<img src="./assets/logo.svg" alt="Auto Video Studio" width="120" />
+<img src="./assets/logo.svg" alt="Automatic Video Generator" width="120" />
 
-# 🎬 Auto Video Studio (News & Manga)
+# 🎬 Automatic Video Generator
 
-### AI-Powered Pipeline to Turn Articles or Manga into Viral 9:16 Videos
+### Tạo video dọc 9:16 tự động từ tin tức, truyện kể hoặc manga
 
-**One command. Zero editing. Pro-grade motion graphics for short-form vertical video.**
+**Clone repo, setup môi trường, nhập nội dung — pipeline sẽ tự tạo voice, phụ đề, hiệu ứng, nền video và xuất `video.mp4`.**
 
-[![Stars](https://img.shields.io/github/stars/hoquanghai/Auto-Create-Video?style=for-the-badge&logo=github&color=yellow)](https://github.com/hoquanghai/Auto-Create-Video/stargazers)
-[![License](https://img.shields.io/github/license/hoquanghai/Auto-Create-Video?style=for-the-badge&color=green)](LICENSE)
+[![License](https://img.shields.io/github/license/namvip55/automatic_video?style=for-the-badge&color=green)](LICENSE)
 [![Node](https://img.shields.io/badge/node-22%2B-brightgreen?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/typescript-6%2B-blue?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-[**🇬🇧 English**](README.md) · [**🇻🇳 Tiếng Việt**](README.vi.md) · [**🚀 Quick Start**](#-quick-start) · [**❓ FAQ**](#-faq)
+[**🚀 Setup nhanh**](#-setup-nhanh) · [**🎥 Tạo video**](#-tạo-video) · [**🧰 Lệnh hữu ích**](#-lệnh-hữu-ích)
 
 </div>
 
 ---
 
-## 🌟 Overview
+## Giới thiệu
 
-**Auto Video Studio** is an automated production pipeline designed for content creators. It bridges the gap between raw content (news articles or manga chapters) and high-quality short-form video using AI orchestration and deterministic rendering.
+Đây là project tự động hóa sản xuất video ngắn cho TikTok, YouTube Shorts, Facebook Reels hoặc các nền tảng video dọc. Project hỗ trợ tạo video từ URL tin tức, nội dung truyện kể tiếng Việt, hoặc ảnh manga/truyện tranh.
 
-### 🍱 Two Powerful Modes
+Pipeline sẽ tự xử lý các phần chính:
 
-| Feature | 📰 News Mode | 📖 Manga Mode |
-| :--- | :--- | :--- |
-| **Input** | News URL, `.txt`, or `.md` | Manga URL or local folder of images |
-| **Visuals** | Pexels stock footage + Article images | Original manga panels with Ken Burns |
-| **Logic** | Summarization & Scene Analysis | OCR (Claude Vision) + RTL Reading Order |
-| **Templates** | 12 dynamic motion graphic templates | Optimized `manga-panel` slideshow |
-| **Voice** | Natural TTS (LucyLab/ElevenLabs) | Character-synced or Narrator TTS |
+- Tạo giọng đọc bằng LucyLab hoặc ElevenLabs.
+- Tải ảnh/video nền từ Pexels theo keyword.
+- Render video dọc 9:16 bằng HyperFrames, Puppeteer, GSAP và FFmpeg.
+- Tự ghép voice, SFX, BGM và phụ đề.
+- Xuất file cuối cùng tại `output/<slug>/video.mp4`.
 
----
+## Các chế độ hỗ trợ
 
-## 🎥 Live Demo
-👉 [**Watch Demo on YouTube Shorts**](https://youtube.com/shorts/S24JfKxV4bo)
+| Mode | Input | Visual | Output |
+| :--- | :--- | :--- | :--- |
+| News | URL tin tức hoặc file nội dung | Video/ảnh stock + template tin tức | `video.mp4` |
+| Story | Chủ đề hoặc nội dung truyện | Video nền thiên nhiên, côn trùng, chill | `video.mp4` |
+| Manga | URL/folder ảnh truyện | Trang manga + Ken Burns | `video.mp4` |
 
-*This video was generated **entirely** by the pipeline — Vietnamese TTS + HyperFrames + GSAP animations, no manual editing.*
+## Tính năng chính
 
----
-
-## ✨ Key Features
-
-- 🤖 **Claude Code Integration**: Run a single slash command `/create-news-video <url>` to start the entire process.
-- 🎨 **12+ Smart Templates**: Hook, Comparison, Stat Hero, Feature List, Manga Panel, Kinetic Quote, and more.
-- 👁️ **Smart Manga OCR**: Automated Vietnamese text extraction with logical reordering (Right-to-Left, Top-to-Bottom).
-- 🎤 **Pro TTS Support**: Built-in integration with **LucyLab** (Vietnamese voice cloning) and **ElevenLabs**.
-- 🔊 **Auto SFX Mixing**: 3-tier smart picker (Semantic Match -> Template Default -> Fallback).
-- 🖼️ **Auto Thumbnail**: Generates 9:16 covers using Gemini 2.5 Flash Image.
-- ♻️ **Idempotent Pipeline**: Skips expensive TTS steps if audio files already exist.
+- Slash command Claude Code: `/create-news-video ...`
+- Skill setup môi trường: `/setup-environment`
+- Story Mode dùng video nền động, không dùng ảnh tĩnh.
+- Manga OCR bằng Claude Vision, đọc phải sang trái, trên xuống dưới.
+- TTS tiếng Việt qua LucyLab, hoặc đa ngôn ngữ qua ElevenLabs.
+- Tự burn phụ đề vào video.
+- Có sẵn SFX/BGM mẫu để clone về chạy nhanh.
 
 ---
 
-## 🚀 Quick Start From a Fresh Machine
+## 🚀 Setup nhanh
 
-Follow these steps on a computer that has not installed anything for this project yet.
+### Yêu cầu trước khi clone
 
-### 1. Install system tools
+Máy cần có 4 công cụ:
 
-#### Windows 10/11
-Open **PowerShell** or **Windows Terminal** and run:
+- Git
+- Node.js 22+
+- npm
+- FFmpeg
+
+Cài nhanh trên Windows:
 
 ```powershell
 winget install --id Git.Git -e
@@ -71,35 +71,13 @@ winget install --id OpenJS.NodeJS.LTS -e
 winget install --id Gyan.FFmpeg -e
 ```
 
-Close and reopen the terminal, then verify:
-
-```powershell
-git --version
-node --version
-npm --version
-ffmpeg -version
-```
-
-Node.js must be **22 or higher**.
-
-#### macOS
-Install Homebrew first if needed, then run:
+Cài nhanh trên macOS:
 
 ```bash
 brew install git node ffmpeg
 ```
 
-Verify:
-
-```bash
-git --version
-node --version
-npm --version
-ffmpeg -version
-```
-
-#### Ubuntu/Debian Linux
-Run:
+Cài nhanh trên Ubuntu/Debian:
 
 ```bash
 sudo apt update
@@ -108,7 +86,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
-Verify:
+Kiểm tra sau khi cài:
 
 ```bash
 git --version
@@ -117,38 +95,31 @@ npm --version
 ffmpeg -version
 ```
 
-### 2. Clone the repository
+### Clone và cài project
 
 ```bash
-git clone https://github.com/hoquanghai/Auto-Create-Video.git
-cd Auto-Create-Video
-```
-
-### 3. Install Node modules
-
-This creates the local `node_modules/` folder required to run the TypeScript pipeline.
-
-```bash
+git clone https://github.com/namvip55/automatic_video.git
+cd automatic_video
 npm install
 ```
 
-### 4. Configure API keys
+### Tạo file môi trường
 
-Copy the example environment file:
+Windows PowerShell:
 
-#### Windows PowerShell
 ```powershell
 Copy-Item .env.example .env.local
 ```
 
-#### macOS/Linux
+macOS/Linux:
+
 ```bash
 cp .env.example .env.local
 ```
 
-Open `.env.local` in a text editor and fill in the keys you want to use.
+Mở `.env.local` và điền API keys.
 
-For the default Vietnamese LucyLab setup:
+Dùng LucyLab mặc định:
 
 ```env
 TTS_PROVIDER=lucylab
@@ -157,7 +128,7 @@ VIETNAMESE_VOICEID=your_lucylab_voice_id
 PEXELS_API_KEY=your_pexels_api_key
 ```
 
-Or use ElevenLabs instead:
+Hoặc dùng ElevenLabs:
 
 ```env
 TTS_PROVIDER=elevenlabs
@@ -167,146 +138,88 @@ ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 PEXELS_API_KEY=your_pexels_api_key
 ```
 
-Required keys:
-
-| Key | Required for | Purpose |
-| :--- | :--- | :--- |
-| `VIETNAMESE_API_KEY` | `TTS_PROVIDER=lucylab` | Generate Vietnamese voice audio |
-| `VIETNAMESE_VOICEID` | `TTS_PROVIDER=lucylab` | Select LucyLab voice |
-| `ELEVENLABS_API_KEY` | `TTS_PROVIDER=elevenlabs` | Generate voice audio |
-| `ELEVENLABS_VOICE_ID` | `TTS_PROVIDER=elevenlabs` | Select ElevenLabs voice |
-| `PEXELS_API_KEY` | News/Story stock visuals | Download background videos/images |
-
-### 5. Prepare sound effects
-
-The repository includes a small default `assets/sfx/` library, so the pipeline can run immediately after install.
-
-To download a larger SFX library:
-
-```bash
-npm run sfx:download
-npm run sfx:filter
-```
-
-`npm run sfx:download` downloads raw files into `SFX/`; `npm run sfx:filter` copies usable short effects into `assets/sfx/`, which is the folder used by the pipeline.
-
-### 6. Check that the project is healthy
+### Check project
 
 ```bash
 npm run typecheck
 npm test
 ```
 
-Both commands should pass before rendering videos.
+Nếu cả hai lệnh pass, project đã sẵn sàng render video.
 
-### 7. Create a video with Claude Code
+### Setup bằng Claude Code
 
-Install Claude Code if you want the automated slash command workflow:
+Nếu dùng Claude Code, có thể để project tự check và setup:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
-```
-
-Then run Claude Code from the project root:
-
-```bash
 claude
 ```
 
-Examples inside Claude Code:
+Trong Claude Code, chạy:
 
 ```text
-/create-news-video https://vnexpress.net/link-to-article
+/setup-environment
+```
+
+Skill này sẽ check Git, Node, npm, FFmpeg, tạo `.env.local` nếu thiếu, chạy `npm install`, kiểm tra assets, typecheck và test.
+
+---
+
+## 🎥 Tạo video
+
+### Cách nhanh bằng Claude Code
+
+```text
+/create-news-video https://vnexpress.net/link-tin-tuc
 /create-news-video Tạo video kể chuyện hài hước ngắn 2 phút
 /create-news-video https://manga-site.com/chapter-1
 ```
 
-The final file will be saved as:
+Kết quả nằm tại:
 
 ```text
 output/<slug>/video.mp4
 ```
 
-### 8. Create a video manually without Claude Code
+### Cách chạy thủ công
 
-Create a `script.json` file, then run:
+Tạo một file `script.json`, sau đó chạy:
 
 ```bash
 npm run pipeline -- path/to/script.json
 ```
 
-Minimal Story Mode example:
-
-```json
-{
-  "version": "1.0",
-  "metadata": {
-    "title": "Con Muỗi Đi Họp",
-    "source": { "url": "generated://story", "domain": "story", "image": "" },
-    "mode": "news",
-    "channel": "Nép si lon",
-    "theme": "emerald"
-  },
-  "voice": {
-    "provider": "lucylab",
-    "voiceId": "${VIETNAMESE_VOICEID}",
-    "speed": 0.95
-  },
-  "scenes": [
-    {
-      "id": "hook",
-      "type": "hook",
-      "voiceText": "Có một con muỗi tên Mít. Nó có một ước mơ rất nghiêm túc: trở thành trưởng phòng nhân sự.",
-      "visual": { "videoKeyword": "macro insects nature" },
-      "templateData": { "template": "hook", "headline": "Con Muỗi Đi Họp", "subhead": "Một chuyện rất lạ" }
-    },
-    {
-      "id": "body-1",
-      "type": "body",
-      "voiceText": "Sáng thứ hai, Mít bay vào phòng họp lúc mọi người đang ngáp. Nó đậu lên màn hình máy chiếu, đúng chỗ chữ kế hoạch quý mới.",
-      "visual": { "videoKeyword": "calm forest video" },
-      "templateData": { "template": "callout", "statement": "Một con muỗi xuất hiện đúng lúc họp quý.", "tag": "Khởi đầu" }
-    },
-    {
-      "id": "outro",
-      "type": "outro",
-      "voiceText": "Cảm ơn bạn đã theo dõi. Hãy theo dõi Nép si lon để xem các video thú vị nhé.",
-      "visual": { "videoKeyword": "gentle clouds" },
-      "templateData": { "template": "outro", "ctaTop": "Theo dõi ngay", "channelName": "Nép si lon", "source": "story" }
-    }
-  ]
-}
-```
-
-Run it:
+Với manga:
 
 ```bash
-npm run pipeline -- output/my-story/script.json
+npm run manga -- path/to/script.json
 ```
 
-### 9. Useful commands
+---
+
+## 🧰 Lệnh hữu ích
 
 ```bash
-npm run pipeline -- path/to/script.json       # Render News or Story video
-npm run manga -- path/to/script.json          # Render Manga script
-npm run rerender -- output/<slug>             # Rerender visuals from an existing output folder
-npm run typecheck                             # TypeScript validation
-npm test                                      # Run tests
-npm run sfx:download                         # Download raw SFX into SFX/
-npm run sfx:filter                           # Copy usable SFX into assets/sfx/
+npm run pipeline -- path/to/script.json       # Render News hoặc Story video
+npm run manga -- path/to/script.json          # Render Manga video
+npm run rerender -- output/<slug>             # Render lại visuals từ output có sẵn
+npm run typecheck                             # Kiểm tra TypeScript
+npm test                                      # Chạy test
+npm run sfx:download                         # Tải SFX thô vào SFX/
+npm run sfx:filter                           # Lọc SFX ngắn vào assets/sfx/
 ```
 
-### 10. Common setup problems
+## Lỗi setup thường gặp
 
-| Problem | Fix |
+| Lỗi | Cách xử lý |
 | :--- | :--- |
-| `node` is not recognized | Reopen terminal after installing Node.js, or reinstall Node.js 22+ |
-| `ffmpeg` is not recognized | Reopen terminal after installing FFmpeg, or add FFmpeg to PATH |
-| Missing `VIETNAMESE_API_KEY` | Copy `.env.example` to `.env.local` and fill LucyLab keys |
-| Missing `ELEVENLABS_API_KEY` | Set `TTS_PROVIDER=lucylab` or fill ElevenLabs keys |
-| Pexels fetch fails | Check `PEXELS_API_KEY` in `.env.local` |
-| No SFX available | Use bundled `assets/sfx/` or run `npm run sfx:download` then `npm run sfx:filter` |
-| JSON validation fails | Check scene text length limits and valid `theme`: `classic`, `gold`, `emerald`, `sunset`, `cyber` |
+| `node` is not recognized | Cài Node.js 22+ rồi mở lại terminal |
+| `ffmpeg` is not recognized | Cài FFmpeg rồi mở lại terminal |
+| Thiếu `VIETNAMESE_API_KEY` | Điền LucyLab key trong `.env.local` |
+| Thiếu `PEXELS_API_KEY` | Điền Pexels key trong `.env.local` |
+| Không có SFX | Repo có sẵn SFX mẫu; muốn thêm thì chạy `npm run sfx:download` và `npm run sfx:filter` |
+| JSON validation fails | Kiểm tra template data, text length và theme hợp lệ |
 
 ---
 
