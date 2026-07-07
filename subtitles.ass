@@ -1,0 +1,38 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Highlight,Montserrat ExtraBold Italic,54,&H00FFFFFF,&H0000D7FF,&H00000000,&H80000000,1,1,0,0,100,100,0,0,1,5,2,2,90,90,150,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.00,0:00:01.84,Highlight,,0,0,0,,{\k26}nghe {\k13}bờ {\k13}lu {\k20}bạn {\k13}sẽ {\k26}nghĩ {\k20}đây {\k20}chỉ {\k13}là {\k21}một
+Dialogue: 0,0:00:01.84,0:00:03.14,Highlight,,0,0,0,,{\k19}bài {\k25}nhạc {\k25}chiu {\k12}về {\k25}tình {\k24}yêu,
+Dialogue: 0,0:00:03.14,0:00:03.84,Highlight,,0,0,0,,{\k29}nhưng {\k23}thật {\k18}ra,
+Dialogue: 0,0:00:03.84,0:00:05.73,Highlight,,0,0,0,,{\k13}nó {\k13}là {\k19}câu {\k38}chuyện {\k13}về {\k19}một {\k32}người {\k25}đang {\k18}dần
+Dialogue: 0,0:00:05.73,0:00:07.23,Highlight,,0,0,0,,{\k19}mất {\k13}đi {\k19}cảm {\k19}xúc {\k19}của {\k31}chính {\k30}mình.
+Dialogue: 0,0:00:07.73,0:00:09.15,Highlight,,0,0,0,,{\k13}bờ {\k13}lu {\k32}không {\k19}chỉ {\k13}là {\k19}màu {\k33}xanh,
+Dialogue: 0,0:00:09.15,0:00:11.08,Highlight,,0,0,0,,{\k13}nó {\k13}là {\k20}cảm {\k27}giác {\k33}trống {\k27}rỗng {\k13}là {\k20}khi {\k20}bạn {\k7}ở
+Dialogue: 0,0:00:11.08,0:00:11.79,Highlight,,0,0,0,,{\k18}bên {\k18}một {\k35}người,
+Dialogue: 0,0:00:11.79,0:00:13.61,Highlight,,0,0,0,,{\k32}nhưng {\k19}lại {\k32}không {\k19}còn {\k19}cảm {\k25}thấy {\k13}gì {\k24}nữa.
+Dialogue: 0,0:00:14.11,0:00:16.11,Highlight,,0,0,0,,{\k22}bài {\k22}hát {\k15}kể {\k15}về {\k22}một {\k22}mối {\k29}quan {\k15}hệ {\k37}không
+Dialogue: 0,0:00:16.11,0:00:17.08,Highlight,,0,0,0,,{\k22}tan {\k15}vỡ {\k15}vì {\k22}cãi {\k23}vã,
+Dialogue: 0,0:00:17.08,0:00:18.27,Highlight,,0,0,0,,{\k15}mà {\k23}tan {\k15}vỡ {\k15}vì {\k15}im {\k37}lặng.
+Dialogue: 0,0:00:18.77,0:00:19.69,Highlight,,0,0,0,,{\k29}không {\k17}còn {\k23}giận {\k23}hờn,
+Dialogue: 0,0:00:19.69,0:00:20.56,Highlight,,0,0,0,,{\k29}không {\k17}còn {\k17}níu {\k24}kéo,
+Dialogue: 0,0:00:20.56,0:00:22.34,Highlight,,0,0,0,,{\k18}chỉ {\k18}còn {\k18}lại {\k18}một {\k37}khoảng {\k25}cách {\k12}mà {\k12}cả {\k20}hai
+Dialogue: 0,0:00:22.34,0:00:23.69,Highlight,,0,0,0,,{\k18}đều {\k23}biết {\k29}nhưng {\k29}không {\k18}nói {\k18}ra.
+Dialogue: 0,0:00:24.19,0:00:25.27,Highlight,,0,0,0,,{\k14}và {\k27}điều {\k20}đau {\k27}nhất {\k20}là,
+Dialogue: 0,0:00:25.27,0:00:26.30,Highlight,,0,0,0,,{\k32}không {\k26}phải {\k19}hết {\k26}yêu,
+Dialogue: 0,0:00:26.30,0:00:28.24,Highlight,,0,0,0,,{\k14}mà {\k14}là {\k35}không {\k21}còn {\k28}biết {\k21}yêu {\k21}như {\k21}thế {\k19}nào
+Dialogue: 0,0:00:28.24,0:00:28.46,Highlight,,0,0,0,,{\k22}nữa.
+Dialogue: 0,0:00:28.96,0:00:30.87,Highlight,,0,0,0,,{\k13}bờ {\k13}lu {\k33}chính {\k13}là {\k33}trạng {\k26}thái {\k13}đó {\k20}khi {\k28}trái
+Dialogue: 0,0:00:30.87,0:00:31.96,Highlight,,0,0,0,,{\k20}tim {\k20}bạn {\k20}vẫn {\k20}còn {\k7}ở {\k22}đó,
+Dialogue: 0,0:00:31.96,0:00:33.77,Highlight,,0,0,0,,{\k34}nhưng {\k20}cảm {\k20}xúc {\k20}thì {\k13}đã {\k20}rời {\k13}đi {\k13}từ {\k28}lâu.
+Dialogue: 0,0:00:34.27,0:00:35.81,Highlight,,0,0,0,,{\k18}sau {\k18}khi {\k24}hiểu {\k24}điều {\k18}này {\k12}có {\k12}lẽ {\k18}bạn {\k9}sẽ
+Dialogue: 0,0:00:35.81,0:00:37.34,Highlight,,0,0,0,,{\k28}không {\k23}nghe {\k11}bờ {\k11}lu {\k23}theo {\k23}cách {\k11}cũ {\k23}nữa.

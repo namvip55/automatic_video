@@ -26,6 +26,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { scrapeMangaChapter, isMangaUrl } from "./manga/manga-scraper.js";
 import { downloadMangaPages, getSuccessfulPages } from "./manga/image-downloader.js";
 import { generateMangaScript } from "./manga/script-generator.js";
+import { ocrMangaPages, filterOcrTextsWithLlm } from "./content/manga-ocr.js";
 import { runPipeline } from "./pipeline.js";
 import { log } from "./utils/logger.js";
 
@@ -33,15 +34,39 @@ async function main() {
   const args = process.argv.slice(2);
   let input = args.find((a) => !a.startsWith("--"));
   const scrapeOnly = args.includes("--scrape-only");
+  
+  // Parse --part flag: --part N or --part=N
+  const partArg = args.find((a) => a.startsWith("--part"));
+  let partNum: number | null = null;
+  if (partArg) {
+    const match = partArg.match(/^--part(?:=(\d+))?$/);
+    if (match) {
+      if (match[1]) {
+        partNum = parseInt(match[1], 10);
+      } else {
+        // --part N format (space-separated)
+        const idx = args.indexOf(partArg);
+        if (idx >= 0 && args[idx + 1] && !args[idx + 1].startsWith("--")) {
+          partNum = parseInt(args[idx + 1], 10);
+        }
+      }
+    }
+    if (!partNum || isNaN(partNum)) {
+      console.error("Error: --part flag requires a number (e.g., --part 1 or --part=1)");
+      process.exit(2);
+    }
+  }
 
   if (!input) {
-    console.error("Usage: npm run manga -- <url|script.json>");
+    console.error("Usage: npm run manga -- <url|script.json|directory>");
     console.error("");
     console.error("  <url>           Manga chapter URL (auto-detected)");
     console.error("  <script.json>   Path to existing script.json");
+    console.error("  <directory>     Path to local manga page images");
     console.error("");
     console.error("Options:");
     console.error("  --scrape-only   Only scrape + download images, don't render video");
+    console.error("  --part N        Process only part N (1-indexed). Required when multiple parts exist.");
     console.error("  --full          Generate a single long video instead of chunks (local mode only)");
     process.exit(2);
   }
@@ -117,12 +142,26 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
     await cp(join(dir, file), join(pagesDir, file));
   }
 
+  // OCR manga pages via LLM vision
+  log.info("🔍 OCR manga pages (Vietnamese)...");
+  const ocrPagePaths = pagePaths.map((p) => join(pagesDir, basename(p)));
+  let ocrTexts: string[] = [];
+  try {
+    ocrTexts = await ocrMangaPages(ocrPagePaths, { concurrency: 3 });
+    const filledCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
+    log.ok(`OCR complete: ${filledCount}/${ocrPagePaths.length} pages have text`);
+  } catch (e: any) {
+    log.warn(`OCR failed (${e.message}) — continuing without voice narration`);
+  }
+
   if (isFullMovie) {
+    const hasOcrText = ocrTexts.some((t) => t.trim() && t.trim() !== ".");
     const script = generateMangaScript(chapter, pagePaths, {
       channelName: "Truyện Tranh TV",
       theme: "cyber",
-      skipTts: true,
+      skipTts: !hasOcrText,
       imagePathPrefix: "pages",
+      ocrTexts,
     });
     const scriptPath = join(outputDir, "script.json");
     await writeFile(scriptPath, JSON.stringify(script, null, 2));
@@ -133,6 +172,8 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
     for (let i = 0; i < pagePaths.length; i += CHUNK_SIZE) {
       const partNum = Math.floor(i / CHUNK_SIZE) + 1;
       const chunk = pagePaths.slice(i, i + CHUNK_SIZE);
+      const chunkOcrTexts = ocrTexts.slice(i, i + CHUNK_SIZE);
+      const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
       const partDir = join(outputDir, `part-${partNum}`);
       await mkdir(partDir, { recursive: true });
 
@@ -142,8 +183,9 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
         {
           channelName: "Truyện Tranh TV",
           theme: "cyber",
-          skipTts: true,
+          skipTts: !hasOcrText,
           imagePathPrefix: "pages",
+          ocrTexts: chunkOcrTexts,
         }
       );
       const scriptPath = join(partDir, "script.json");
@@ -239,8 +281,20 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
     return;
   }
 
+  // ── Step 3.5: OCR manga pages via LLM vision ───────────────────────────
+  log.info("🔍 Step 3: OCR manga pages (Vietnamese)...");
+  const ocrPagePaths = successfulPages.map((p) => join(pagesDir, basename(p)));
+  let ocrTexts: string[] = [];
+  try {
+    ocrTexts = await ocrMangaPages(ocrPagePaths, { concurrency: 3 });
+    const filledCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
+    log.ok(`OCR complete: ${filledCount}/${ocrPagePaths.length} pages have text`);
+  } catch (e: any) {
+    log.warn(`OCR failed (${e.message}) — continuing without voice narration`);
+  }
+
   // ── Step 4: Generate script.json ──────────────────────────────────────
-  log.info("📝 Step 3: Generating script.json (Chunked mode)...");
+  log.info("📝 Step 4: Generating script.json (Chunked mode)...");
 
   const CHUNK_SIZE = 10;
   const chunks: string[][] = [];
@@ -253,6 +307,9 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
   for (let i = 0; i < chunks.length; i++) {
     const partNum = i + 1;
     const chunk = chunks[i];
+    const chunkOcrTexts = ocrTexts.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + chunk.length);
+    const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
+
     const partDir = chunks.length > 1 ? join(outputDir, `part-${partNum}`) : outputDir;
     if (chunks.length > 1) {
       await mkdir(partDir, { recursive: true });
@@ -263,13 +320,12 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
       chapter: chunks.length > 1 ? `${chapter.chapter} (Phần ${partNum})` : chapter.chapter,
     };
 
-    const isMultiPart = chunks.length > 1;
-
     const script = generateMangaScript(partChapter, chunk, {
       channelName: "Truyện Tranh TV",
       theme: "cyber",
-      skipTts: true, // Always skip TTS for default generation; skill will override
-      imagePathPrefix: "pages", // Always "pages" because we copy it inside
+      skipTts: !hasOcrText, // Enable TTS only if OCR text is available
+      imagePathPrefix: "pages",
+      ocrTexts: chunkOcrTexts,
     });
 
     script.metadata.source.url = url;
@@ -284,7 +340,7 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
       await cp(pagesDir, partPagesDir, { recursive: true });
     }
 
-    log.info(`  [Part ${partNum}] Script: ${scriptPath} (${script.scenes.length} scenes)`);
+    log.info(`  [Part ${partNum}] Script: ${scriptPath} (${script.scenes.length} scenes, TTS: ${hasOcrText ? "ON" : "OFF"})`);
 
     // ── Step 5: Run video pipeline ────────────────────────────────────────
     log.info(`🎬 [Part ${partNum}] Running video pipeline...`);

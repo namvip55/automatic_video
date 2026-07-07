@@ -13,6 +13,16 @@ const ENV_KEYS = [
   "ELEVENLABS_MODEL_ID",
   "ELEVENLABS_ENDPOINT",
   "TTS_CONCURRENCY",
+  "PEXELS_API_KEY",
+  "LLM_API_KEY",
+  "LLM_MODEL",
+  "LLM_BASE_URL",
+  "FIRECRAWL_API_KEY",
+  "FIRECRAWL_BASE_URL",
+  "OCR_PROVIDER",
+  "OCR_SPACE_API_KEY",
+  "OCR_SPACE_BASE_URL",
+  "OCR_SPACE_ENGINE",
 ];
 
 describe("loadConfig", () => {
@@ -34,6 +44,8 @@ describe("loadConfig", () => {
     it("reads LucyLab env vars when no provider specified", () => {
       process.env.VIETNAMESE_API_KEY = "sk_test_abc";
       process.env.VIETNAMESE_VOICEID = "voice123";
+      process.env.FIRECRAWL_API_KEY = "fc-test-key";
+      process.env.OCR_SPACE_API_KEY = "ocr_test_key";
       const cfg = loadConfig();
       expect(cfg.ttsProvider).toBe("lucylab");
       expect(cfg.lucylabApiKey).toBe("sk_test_abc");
@@ -48,6 +60,8 @@ describe("loadConfig", () => {
     it("uses sensible defaults for optional vars", () => {
       process.env.VIETNAMESE_API_KEY = "k";
       process.env.VIETNAMESE_VOICEID = "v";
+      process.env.FIRECRAWL_API_KEY = "fc-test-key";
+      process.env.OCR_SPACE_API_KEY = "ocr_test_key";
       const cfg = loadConfig();
       expect(cfg.lucylabEndpoint).toBe("https://api.lucylab.io/json-rpc");
       expect(cfg.lucylabPollIntervalMs).toBe(2000);
@@ -61,6 +75,8 @@ describe("loadConfig", () => {
       process.env.TTS_PROVIDER = "elevenlabs";
       process.env.ELEVENLABS_API_KEY = "sk_eleven_xyz";
       process.env.ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+      process.env.FIRECRAWL_API_KEY = "fc-test-key";
+      process.env.OCR_SPACE_API_KEY = "ocr_test_key";
       const cfg = loadConfig();
       expect(cfg.ttsProvider).toBe("elevenlabs");
       expect(cfg.elevenlabsApiKey).toBe("sk_eleven_xyz");
@@ -80,6 +96,8 @@ describe("loadConfig", () => {
       process.env.ELEVENLABS_API_KEY = "k";
       process.env.ELEVENLABS_VOICE_ID = "v";
       process.env.ELEVENLABS_MODEL_ID = "eleven_turbo_v2_5";
+      process.env.FIRECRAWL_API_KEY = "fc-test-key";
+      process.env.OCR_SPACE_API_KEY = "ocr_test_key";
       const cfg = loadConfig();
       expect(cfg.elevenlabsModelId).toBe("eleven_turbo_v2_5");
     });

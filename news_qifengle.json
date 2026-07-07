@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "title": "起风了 - Gió nổi lên",
+    "channel": "Tin tức âm nhạc",
+    "mode": "news",
+    "source": {
+      "domain": "news",
+      "url": "generated://music-news",
+      "image": "none"
+    }
+  },
+  "voice": {
+    "provider": "lucylab",
+    "voiceId": "${VIETNAMESE_VOICEID}",
+    "speed": 1.0
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "type": "hook",
+      "voiceText": "“qǐ fēng le” — gió nổi lên rồi. Có những lúc nghe bài này… tự nhiên thấy lòng mình chùng xuống. Không rõ vì sao— chỉ biết là… rất thật.",
+      "visual": {
+        "videoKeyword": "moody rain window"
+      },
+      "templateData": {
+        "template": "hook",
+        "headline": "起风了...",
+        "subhead": "Gió nổi lên rồi"
+      }
+    },
+    {
+      "id": "scene-2",
+      "type": "body",
+      "voiceText": "Nhiều người nghĩ đây là một bản nhạc buồn. Nhưng nỗi buồn ấy không đến từ chuyện tình cảm. Nó đến từ những thứ… đã từng rất quen thuộc, nhưng giờ không còn nữa.",
+      "visual": {
+        "videoKeyword": "time passing concept"
+      },
+      "templateData": {
+        "template": "kinetic-text",
+        "chunks": [
+          "Không phải tình yêu,",
+          "mà là cảm giác,",
+          "quen thuộc mất đi."
+        ]
+      }
+    },
+    {
+      "id": "scene-3",
+      "type": "body",
+      "voiceText": "Cơn gió trong bài hát này không nằm ở bầu trời. Nó nằm trong cách mọi thứ dần đổi khác.",
+      "visual": {
+        "videoKeyword": "day to night timelapse"
+      },
+      "templateData": {
+        "template": "callout",
+        "statement": "Nó nằm trong cách mọi thứ dần đổi khác.",
+        "tag": "Gió của thời gian"
+      }
+    },
+    {
+      "id": "scene-4",
+      "type": "body",
+      "voiceText": "Một ngày nào đó, bạn không còn gặp lại những người từng đi cùng mỗi ngày. Những câu nói tưởng chừng bình thường— lại trở thành lần cuối. Những nơi từng rất thân thuộc— bỗng trở nên xa lạ.",
+      "visual": {
+        "videoKeyword": "busy street crowd"
+      },
+      "templateData": {
+        "template": "feature-list",
+        "title": "Sự đổi khác",
+        "bullets": [
+          "Người từng đi cùng",
+          "Câu nói cuối cùng",
+          "Nơi chốn xa lạ"
+        ]
+      }
+    },
+    {
+      "id": "scene-5",
+      "type": "body",
+      "voiceText": "Không có khoảnh khắc cụ thể nào đánh dấu sự thay đổi. Chỉ là từng chút một… mọi thứ rời khỏi cuộc sống của bạn.",
+      "visual": {
+        "videoKeyword": "seasons changing landscape"
+      },
+      "templateData": {
+        "template": "kinetic-text",
+        "chunks": [
+          "Không có khoảnh khắc,",
+          "chỉ là từng chút một,",
+          "mọi thứ rời đi."
+        ]
+      }
+    },
+    {
+      "id": "scene-6",
+      "type": "body",
+      "voiceText": "Điều khiến người ta đau nhất không phải là chia xa. Mà là nhận ra— dù có quay lại điểm bắt đầu, mọi thứ cũng không thể trở lại như trước.",
+      "visual": {
+        "videoKeyword": "dramatic ocean waves"
+      },
+      "templateData": {
+        "template": "comparison",
+        "left": {
+          "label": "Quay lại",
+          "value": "Điểm bắt đầu",
+          "color": "cyan"
+        },
+        "right": {
+          "label": "Kết quả",
+          "value": "Không thể như trước",
+          "color": "purple",
+          "winner": true
+        }
+      }
+    },
+    {
+      "id": "scene-7",
+      "type": "outro",
+      "voiceText": "Đến khi hiểu được điều đó, bạn sẽ nghe “起风了” theo một cách khác. Không phải để cảm nhận giai điệu… mà để nhớ lại một khoảng thời gian đã không còn tồn tại nữa.",
+      "visual": {
+        "videoKeyword": "galaxy starscape"
+      },
+      "templateData": {
+        "template": "outro",
+        "ctaTop": "Giai điệu hoài niệm",
+        "channelName": "Gió Nổi Lên",
+        "source": "起风了 - Yu Takahashi"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 export type TtsProvider = "lucylab" | "elevenlabs";
+export type OcrProvider = "ocr_space";
 
 export interface Config {
   ttsProvider: TtsProvider;
@@ -20,6 +21,21 @@ export interface Config {
 
   // Stock Footage
   pexelsApiKey?: string;
+
+  // LLM (News/Story script generation)
+  llmApiKey?: string;
+  llmBaseUrl?: string;
+  llmModel: string;
+
+  // Firecrawl (News URL scraping)
+  firecrawlApiKey?: string;
+  firecrawlBaseUrl: string;
+
+  // OCR (Manga OCR)
+  ocrProvider: OcrProvider;
+  ocrSpaceApiKey?: string;
+  ocrSpaceBaseUrl: string;
+  ocrSpaceEngine: number;
 
   ttsConcurrency: number;
 }
@@ -67,6 +83,25 @@ export function loadConfig(): Config {
     }
   }
 
+  // Validate Firecrawl API (News URL scraping)
+  if (!process.env.FIRECRAWL_API_KEY || process.env.FIRECRAWL_API_KEY.trim() === "") {
+    throw new Error(
+      `Missing FIRECRAWL_API_KEY (required for News URL scraping). ` +
+      `Get a free API key at https://firecrawl.dev (500 free credits).`
+    );
+  }
+
+  // Validate OCR provider
+  const ocrProvider = (process.env.OCR_PROVIDER ?? "ocr_space") as OcrProvider;
+  if (ocrProvider === "ocr_space") {
+    if (!process.env.OCR_SPACE_API_KEY || process.env.OCR_SPACE_API_KEY.trim() === "") {
+      throw new Error(
+        `Missing OCR_SPACE_API_KEY (required when OCR_PROVIDER=ocr_space). ` +
+        `Get a free key at https://ocr.space/ocrapi`
+      );
+    }
+  }
+
   return {
     ttsProvider: provider,
     lucylabApiKey: process.env.VIETNAMESE_API_KEY,
@@ -79,6 +114,15 @@ export function loadConfig(): Config {
     elevenlabsModelId: process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2",
     elevenlabsEndpoint: process.env.ELEVENLABS_ENDPOINT ?? "https://api.elevenlabs.io/v1",
     pexelsApiKey: process.env.PEXELS_API_KEY,
+    llmApiKey: process.env.LLM_API_KEY,
+    llmBaseUrl: process.env.LLM_BASE_URL,
+    llmModel: process.env.LLM_MODEL ?? "gpt-4o",
+    firecrawlApiKey: process.env.FIRECRAWL_API_KEY,
+    firecrawlBaseUrl: process.env.FIRECRAWL_BASE_URL ?? "https://api.firecrawl.dev",
+    ocrProvider: (process.env.OCR_PROVIDER ?? "ocr_space") as OcrProvider,
+    ocrSpaceApiKey: process.env.OCR_SPACE_API_KEY,
+    ocrSpaceBaseUrl: process.env.OCR_SPACE_BASE_URL ?? "https://api.ocr.space",
+    ocrSpaceEngine: intDefault("OCR_SPACE_ENGINE", 2),
     ttsConcurrency: intDefault("TTS_CONCURRENCY", 1),
   };
 }

@@ -1,7 +1,7 @@
 {
   "name": "auto-news-video",
   "version": "2.0.0",
-  "description": "Auto-generate Vietnamese 9:16 short news videos from URL/txt — Claude Code skill + HyperFrames + LucyLab/ElevenLabs TTS",
+  "description": "Auto-generate Vietnamese 9:16 short videos from URL/txt/manga — Standalone CLI + HyperFrames + LucyLab/ElevenLabs TTS + OpenAI LLM",
   "main": "src/cli.ts",
   "directories": {
     "doc": "docs"
@@ -10,8 +10,10 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "pipeline": "tsx src/cli.ts",
+    "news": "tsx src/news-cli.ts",
+    "story": "tsx src/story-cli.ts",
     "manga": "tsx src/manga-cli.ts",
+    "pipeline": "tsx src/cli.ts",
     "rerender": "tsx rerender.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
@@ -34,6 +36,7 @@
   "dependencies": {
     "axios": "^1.15.2",
     "dotenv": "^17.4.2",
+    "form-data": "^4.0.6",
     "hyperframes": "^0.4.34",
     "node-fetch": "^3.3.2",
     "openai": "^6.35.0",
@@ -42,6 +45,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/form-data": "^2.2.1",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.5",
     "nock": "^14.0.13",
