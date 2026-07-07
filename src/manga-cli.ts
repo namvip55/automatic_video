@@ -79,7 +79,7 @@ async function main() {
     if (existsSync(input) && (await stat(input)).isDirectory()) {
       const isFullMovie = args.includes("--full");
       log.info(`Running pipeline for local images in: ${input} (Mode: ${isFullMovie ? "Full Movie" : "Chunked"})`);
-      await runLocalMangaPipeline(input, scrapeOnly, isFullMovie);
+      await runLocalMangaPipeline(input, scrapeOnly, isFullMovie, partNum);
       return;
     }
 
@@ -98,9 +98,9 @@ async function main() {
 
     if (input.endsWith(".md")) {
       const markdown = await readFile(input, "utf8");
-      await runMangaPipelineWithMarkdown(markdown, input, scrapeOnly);
+      await runMangaPipelineWithMarkdown(markdown, input, scrapeOnly, partNum);
     } else {
-      await runMangaPipeline(input, scrapeOnly);
+      await runMangaPipeline(input, scrapeOnly, partNum);
     }
   } catch (e) {
     log.error("Manga pipeline failed", e);
@@ -108,7 +108,7 @@ async function main() {
   }
 }
 
-async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMovie: boolean) {
+async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMovie: boolean, partNum: number | null) {
   const files = readdirSync(dir)
     .filter((f) => f.endsWith(".jpg") || f.endsWith(".png") || f.endsWith(".webp"))
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
@@ -142,7 +142,7 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
     await cp(join(dir, file), join(pagesDir, file));
   }
 
-  // OCR manga pages via LLM vision
+  // OCR manga pages via OCR.Space API
   log.info("🔍 OCR manga pages (Vietnamese)...");
   const ocrPagePaths = pagePaths.map((p) => join(pagesDir, basename(p)));
   let ocrTexts: string[] = [];
@@ -150,6 +150,14 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
     ocrTexts = await ocrMangaPages(ocrPagePaths, { concurrency: 3 });
     const filledCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
     log.ok(`OCR complete: ${filledCount}/${ocrPagePaths.length} pages have text`);
+
+    // Filter OCR texts with LLM to remove junk (page numbers, logos, artifacts)
+    if (filledCount > 0) {
+      log.info("🧹 Filtering OCR text with LLM to remove junk...");
+      ocrTexts = await filterOcrTextsWithLlm(ocrTexts);
+      const filteredCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
+      log.ok(`Filtered: ${filteredCount}/${filledCount} pages retained after cleanup`);
+    }
   } catch (e: any) {
     log.warn(`OCR failed (${e.message}) — continuing without voice narration`);
   }
@@ -169,36 +177,54 @@ async function runLocalMangaPipeline(dir: string, scrapeOnly: boolean, isFullMov
   } else {
     // Chunked mode
     const CHUNK_SIZE = 10;
-    for (let i = 0; i < pagePaths.length; i += CHUNK_SIZE) {
-      const partNum = Math.floor(i / CHUNK_SIZE) + 1;
-      const chunk = pagePaths.slice(i, i + CHUNK_SIZE);
-      const chunkOcrTexts = ocrTexts.slice(i, i + CHUNK_SIZE);
-      const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
-      const partDir = join(outputDir, `part-${partNum}`);
-      await mkdir(partDir, { recursive: true });
+    const totalParts = Math.ceil(pagePaths.length / CHUNK_SIZE);
 
-      const script = generateMangaScript(
-        { ...chapter, chapter: `Phần ${partNum}` },
-        chunk,
-        {
-          channelName: "Truyện Tranh TV",
-          theme: "cyber",
-          skipTts: !hasOcrText,
-          imagePathPrefix: "pages",
-          ocrTexts: chunkOcrTexts,
-        }
-      );
-      const scriptPath = join(partDir, "script.json");
-      await writeFile(scriptPath, JSON.stringify(script, null, 2));
-      // Copy pages to partDir
-      const partPagesDir = join(partDir, "pages");
-      await cp(pagesDir, partPagesDir, { recursive: true });
-      await runPipeline(scriptPath);
+    // Require --part flag when multiple parts exist
+    if (totalParts > 1 && partNum === null) {
+      console.error(`❌ Multiple parts detected (${totalParts} parts of ${CHUNK_SIZE} pages each).`);
+      console.error(`   Use --part N to specify which part to process (1-${totalParts}).`);
+      console.error(`   Example: npm run manga -- "${dir}" --part 1`);
+      process.exit(2);
     }
+
+    const targetPart = partNum ?? 1;
+    if (targetPart < 1 || targetPart > totalParts) {
+      console.error(`❌ Invalid part number: ${targetPart}. Valid range: 1-${totalParts}`);
+      process.exit(2);
+    }
+
+    const i = (targetPart - 1) * CHUNK_SIZE;
+    const chunk = pagePaths.slice(i, i + CHUNK_SIZE);
+    const chunkOcrTexts = ocrTexts.slice(i, i + CHUNK_SIZE);
+    const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
+    const partDir = totalParts > 1 ? join(outputDir, `part-${targetPart}`) : outputDir;
+    if (totalParts > 1) {
+      await mkdir(partDir, { recursive: true });
+    }
+
+    log.info(`  Processing part ${targetPart}/${totalParts} (${chunk.length} pages)...`);
+
+    const script = generateMangaScript(
+      { ...chapter, chapter: totalParts > 1 ? `Phần ${targetPart}` : chapter.chapter },
+      chunk,
+      {
+        channelName: "Truyện Tranh TV",
+        theme: "cyber",
+        skipTts: !hasOcrText,
+        imagePathPrefix: "pages",
+        ocrTexts: chunkOcrTexts,
+      }
+    );
+    const scriptPath = join(partDir, "script.json");
+    await writeFile(scriptPath, JSON.stringify(script, null, 2));
+    // Copy pages to partDir
+    const partPagesDir = join(partDir, "pages");
+    await cp(pagesDir, partPagesDir, { recursive: true });
+    await runPipeline(scriptPath);
   }
 }
 
-async function runMangaPipelineWithMarkdown(markdown: string, source: string, scrapeOnly: boolean) {
+async function runMangaPipelineWithMarkdown(markdown: string, source: string, scrapeOnly: boolean, partNum: number | null) {
   // If source is a file path, we want to treat it as a generic source or use domain if possible
   const url = source.endsWith(".md") ? `https://${basename(source)}` : source;
   const chapter = scrapeMangaChapter(markdown, {}, url);
@@ -207,10 +233,10 @@ async function runMangaPipelineWithMarkdown(markdown: string, source: string, sc
   log.info(`  Pages found: ${chapter.pages.length}`);
   log.info(`  Source: ${chapter.source}`);
 
-  await processChapter(chapter, url, scrapeOnly);
+  await processChapter(chapter, url, scrapeOnly, partNum);
 }
 
-async function runMangaPipeline(url: string, scrapeOnly: boolean) {
+async function runMangaPipeline(url: string, scrapeOnly: boolean, partNum: number | null) {
   log.info(`🎬 Manga-to-Video Pipeline`);
   log.info(`URL: ${url}`);
   log.info("");
@@ -238,10 +264,10 @@ async function runMangaPipeline(url: string, scrapeOnly: boolean) {
     process.exit(1);
   }
 
-  await processChapter(chapter, url, scrapeOnly);
+  await processChapter(chapter, url, scrapeOnly, partNum);
 }
 
-async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
+async function processChapter(chapter: any, url: string, scrapeOnly: boolean, partNum: number | null) {
   // ── Step 2: Create output directory ───────────────────────────────────
   const slug = generateSlug(chapter.title, chapter.chapterNumber);
   const timestamp = new Date()
@@ -281,7 +307,7 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
     return;
   }
 
-  // ── Step 3.5: OCR manga pages via LLM vision ───────────────────────────
+  // ── Step 3.5: OCR manga pages via OCR.Space API───────────────────────────
   log.info("🔍 Step 3: OCR manga pages (Vietnamese)...");
   const ocrPagePaths = successfulPages.map((p) => join(pagesDir, basename(p)));
   let ocrTexts: string[] = [];
@@ -289,66 +315,83 @@ async function processChapter(chapter: any, url: string, scrapeOnly: boolean) {
     ocrTexts = await ocrMangaPages(ocrPagePaths, { concurrency: 3 });
     const filledCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
     log.ok(`OCR complete: ${filledCount}/${ocrPagePaths.length} pages have text`);
+
+    // Filter OCR texts with LLM to remove junk (page numbers, logos, artifacts)
+    if (filledCount > 0) {
+      log.info("🧹 Filtering OCR text with LLM to remove junk...");
+      ocrTexts = await filterOcrTextsWithLlm(ocrTexts);
+      const filteredCount = ocrTexts.filter((t) => t.trim() && t.trim() !== ".").length;
+      log.ok(`Filtered: ${filteredCount}/${filledCount} pages retained after cleanup`);
+    }
   } catch (e: any) {
     log.warn(`OCR failed (${e.message}) — continuing without voice narration`);
   }
 
   // ── Step 4: Generate script.json ──────────────────────────────────────
-  log.info("📝 Step 4: Generating script.json (Chunked mode)...");
+  log.info("📝 Step 4: Generating script.json...");
 
   const CHUNK_SIZE = 10;
-  const chunks: string[][] = [];
-  for (let i = 0; i < successfulPages.length; i += CHUNK_SIZE) {
-    chunks.push(successfulPages.slice(i, i + CHUNK_SIZE));
+  const totalParts = Math.ceil(successfulPages.length / CHUNK_SIZE);
+
+  // Require --part flag when multiple parts exist
+  if (totalParts > 1 && partNum === null) {
+    console.error(`❌ Multiple parts detected (${totalParts} parts of ${CHUNK_SIZE} pages each).`);
+    console.error(`   Use --part N to specify which part to process (1-${totalParts}).`);
+    console.error(`   Example: npm run manga -- "${url}" --part 1`);
+    process.exit(2);
   }
 
-  log.info(`  Total chunks: ${chunks.length} (${CHUNK_SIZE} pages each)`);
+  const targetPart = partNum ?? 1;
+  if (targetPart < 1 || targetPart > totalParts) {
+    console.error(`❌ Invalid part number: ${targetPart}. Valid range: 1-${totalParts}`);
+    process.exit(2);
+  }
 
-  for (let i = 0; i < chunks.length; i++) {
-    const partNum = i + 1;
-    const chunk = chunks[i];
-    const chunkOcrTexts = ocrTexts.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + chunk.length);
-    const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
+  const chunkStart = (targetPart - 1) * CHUNK_SIZE;
+  const chunk = successfulPages.slice(chunkStart, chunkStart + CHUNK_SIZE);
+  const chunkOcrTexts = ocrTexts.slice(chunkStart, chunkStart + CHUNK_SIZE);
+  const hasOcrText = chunkOcrTexts.some((t) => t.trim() && t.trim() !== ".");
 
-    const partDir = chunks.length > 1 ? join(outputDir, `part-${partNum}`) : outputDir;
-    if (chunks.length > 1) {
-      await mkdir(partDir, { recursive: true });
-    }
+  log.info(`  Processing part ${targetPart}/${totalParts} (${chunk.length} pages)...`);
 
-    const partChapter = {
-      ...chapter,
-      chapter: chunks.length > 1 ? `${chapter.chapter} (Phần ${partNum})` : chapter.chapter,
-    };
+  const partDir = totalParts > 1 ? join(outputDir, `part-${targetPart}`) : outputDir;
+  if (totalParts > 1) {
+    await mkdir(partDir, { recursive: true });
+  }
 
-    const script = generateMangaScript(partChapter, chunk, {
-      channelName: "Truyện Tranh TV",
-      theme: "cyber",
-      skipTts: !hasOcrText, // Enable TTS only if OCR text is available
-      imagePathPrefix: "pages",
-      ocrTexts: chunkOcrTexts,
-    });
+  const partChapter = {
+    ...chapter,
+    chapter: totalParts > 1 ? `${chapter.chapter} (Phần ${targetPart})` : chapter.chapter,
+  };
 
-    script.metadata.source.url = url;
+  const script = generateMangaScript(partChapter, chunk, {
+    channelName: "Truyện Tranh TV",
+    theme: "cyber",
+    skipTts: !hasOcrText, // Enable TTS only if OCR text is available
+    imagePathPrefix: "pages",
+    ocrTexts: chunkOcrTexts,
+  });
 
-    const scriptPath = join(partDir, "script.json");
-    await writeFile(scriptPath, JSON.stringify(script, null, 2));
+  script.metadata.source.url = url;
 
-    // Copy pages folder to partDir so Hyperframes can find images at "pages/..."
-    const partPagesDir = join(partDir, "pages");
-    if (!existsSync(partPagesDir)) {
-      log.info(`  [Part ${partNum}] Copying pages to: ${partPagesDir}`);
-      await cp(pagesDir, partPagesDir, { recursive: true });
-    }
+  const scriptPath = join(partDir, "script.json");
+  await writeFile(scriptPath, JSON.stringify(script, null, 2));
 
-    log.info(`  [Part ${partNum}] Script: ${scriptPath} (${script.scenes.length} scenes, TTS: ${hasOcrText ? "ON" : "OFF"})`);
+  // Copy pages folder to partDir so Hyperframes can find images at "pages/..."
+  const partPagesDir = join(partDir, "pages");
+  if (!existsSync(partPagesDir)) {
+    log.info(`  [Part ${targetPart}] Copying pages to: ${partPagesDir}`);
+    await cp(pagesDir, partPagesDir, { recursive: true });
+  }
 
-    // ── Step 5: Run video pipeline ────────────────────────────────────────
-    log.info(`🎬 [Part ${partNum}] Running video pipeline...`);
-    try {
-      await runPipeline(scriptPath);
-    } catch (err) {
-      log.error(`  [Part ${partNum}] Failed:`, err);
-    }
+  log.info(`  [Part ${targetPart}] Script: ${scriptPath} (${script.scenes.length} scenes, TTS: ${hasOcrText ? "ON" : "OFF"})`);
+
+  // ── Step 5: Run video pipeline ────────────────────────────────────────
+  log.info(`🎬 [Part ${targetPart}] Running video pipeline...`);
+  try {
+    await runPipeline(scriptPath);
+  } catch (err) {
+    log.error(`  [Part ${targetPart}] Failed:`, err);
   }
 }
 

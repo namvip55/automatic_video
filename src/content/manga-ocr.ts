@@ -127,7 +127,7 @@ export async function ocrMangaPages(
  * @returns Filtered OCR texts (cleaned dialogue/narration only)
  */
 export async function filterOcrTextsWithLlm(ocrTexts: string[]): Promise<string[]> {
-  const { chatCompletion } = await import("./llm-client.js");
+  const { generateText } = await import("./llm-client.js");
   const limit = pLimit(2); // Process 2 pages at a time to avoid rate limits
 
   const systemPrompt = `Bạn là bộ lọc văn bản OCR cho truyện tranh tiếng Việt.
@@ -171,7 +171,7 @@ Output: ""`;
       const userPrompt = `Văn bản OCR từ trang truyện:\n\n${text}`;
 
       try {
-        const filtered = await chatCompletion(systemPrompt, userPrompt);
+        const filtered = await generateText(systemPrompt, userPrompt);
         const cleanedText = filtered.trim();
         // Return "." if filtered text is empty (all junk removed)
         return cleanedText || ".";
